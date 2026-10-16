@@ -10,13 +10,13 @@ const path = require('path');
 process.chdir(path.join(__dirname, '..'));
 
 const agents = [
-  ['ContentStrategy',     './agents/content-strategy-agent'],
-  ['ScriptWriter',        './agents/script-writer-agent'],
-  ['ThumbnailDesigner',   './agents/thumbnail-designer-agent'],
-  ['SEOOptimizer',        './agents/seo-optimizer-agent'],
-  ['ProductionManagement','./agents/production-management-agent'],
-  ['PublishingScheduling','./agents/publishing-scheduling-agent'],
-  ['AnalyticsOptimization','./agents/analytics-optimization-agent']
+  ['ContentStrategy',     '../agents/content-strategy-agent'],
+  ['ScriptWriter',        '../agents/script-writer-agent'],
+  ['ThumbnailDesigner',   '../agents/thumbnail-designer-agent'],
+  ['SEOOptimizer',        '../agents/seo-optimizer-agent'],
+  ['ProductionManagement','../agents/production-management-agent'],
+  ['PublishingScheduling','../agents/publishing-scheduling-agent'],
+  ['AnalyticsOptimization','../agents/analytics-optimization-agent']
 ];
 
 async function run() {
@@ -42,7 +42,8 @@ async function run() {
         validateAll: async () => true
       };
 
-      const Cls = require(mod)[name + 'Agent'] || require(mod).default;
+      const mod_exports = require(mod);
+      const Cls = mod_exports[name + 'Agent'] || mod_exports.default || Object.values(mod_exports).find(v => typeof v === 'function');
       if (!Cls) throw new Error(`class not exported from ${mod}`);
       const inst = new Cls(stubDb, stubCred);
       await inst.initialize();
