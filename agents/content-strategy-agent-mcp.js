@@ -22,10 +22,24 @@
 
 const path = require('path');
 
+// stdout is reserved exclusively for JSON-RPC messages (MCP stdio transport).
+// Every application log line has to go to stderr, otherwise an MCP client
+// reads log output as protocol messages and fails to initialize.
+process.env.LOG_CONSOLE_STREAM = 'stderr';
+
 // MCP stdio transport: read JSON-RPC from stdin, write to stdout
 // Lines are newline-delimited JSON objects.
 function readStdin() {
   return require('readline').createInterface({ input: process.stdin });
+}
+
+// MCP tool results use the `content` array format. A tool execution failure is
+// reported with `isError: true` (MCP protocol version 2024-11-05).
+function toToolResult(payload) {
+  const text = typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2);
+  const result = { content: [{ type: 'text', text }] };
+  if (payload && payload.ok === false) result.isError = true;
+  return result;
 }
 
 async function bootstrap() {
@@ -45,7 +59,13 @@ async function bootstrap() {
 
   const tools = {
     analyze_trends: async ({ region, category } = {}) => {
-      const youtube = credentials.getYouTubeClient();
+      let youtube;
+      try {
+        // getYouTubeClient() throws when credentials or tokens are missing.
+        youtube = credentials.getYouTubeClient();
+      } catch (err) {
+        return { ok: false, error: 'youtube_credentials_missing', message: err.message, trends: [] };
+      }
       if (!youtube) {
         return { ok: false, error: 'youtube_credentials_missing', trends: [] };
       }
@@ -120,6 +140,13 @@ async function bootstrap() {
     let msg;
     try { msg = JSON.parse(line); } catch { return; }
     const { id, method, params } = msg;
+
+    // Notifications carry no id and must never be answered. The MCP client
+    // sends notifications/initialized after initialization and does not wait
+    // for a response.
+    if (method === 'notifications/initialized') return;
+    if (id === undefined || id === null) return;
+
     if (method === 'initialize') {
       process.stdout.write(JSON.stringify({
         jsonrpc: '2.0', id,
@@ -148,10 +175,13 @@ async function bootstrap() {
         return;
       }
       try {
-        const result = await fn(args);
-        process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id, result }) + '\n');
+        const payload = await fn(args);
+        process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id, result: toToolResult(payload) }) + '\n');
       } catch (err) {
-        process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id, error: { code: -32000, message: err.message } }) + '\n');
+        // A failed tool execution is reported inside the tool result with
+        // isError: true; JSON-RPC errors are reserved for protocol problems.
+        const payload = { ok: false, error: err.message };
+        process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id, result: toToolResult(payload) }) + '\n');
       }
       return;
     }
