@@ -8,6 +8,9 @@
     "setup": "node setup.js",
     "scheduler": "node schedules/daily-automation.js",
     "test": "node test.js",
+    "test:agents": "node tests/agents-initialize.test.js",
+    "test:workflows": "node tests/workflows-smoke.test.js",
+    "test:all": "node test.js && node tests/agents-initialize.test.js && node tests/workflows-smoke.test.js",
     "agent:strategy": "node agents/content-strategy-agent.js",
     "agent:script": "node agents/script-writer-agent.js",
     "agent:thumbnail": "node agents/thumbnail-designer-agent.js",
@@ -31,13 +34,13 @@
     "form-data": "^4.0.4",
     "googleapis": "^128.0.0",
     "inquirer": "^8.2.6",
-    "jimp": "^0.22.10",
     "microsoft-cognitiveservices-speech-sdk": "^1.45.0",
     "moment": "^2.29.4",
     "node-cron": "^3.0.2",
     "openai": "^4.20.0",
     "playwright": "^1.54.2",
     "replicate": "^1.0.1",
+    "sharp": "^0.33.5",
     "sqlite3": "^5.1.6",
     "winston": "^3.11.0"
   },
@@ -45,6 +48,6 @@
     "nodemon": "^3.0.2"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
   }
 }

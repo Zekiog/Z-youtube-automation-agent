@@ -47,17 +47,17 @@ class Logger {
 
   info(message, ...args) {
     this.winston.info(message, ...args);
-    console.log(this.formatConsoleMessage('INFO', message, chalk.blue));
+    this.writeConsole(this.formatConsoleMessage('INFO', message, chalk.blue));
   }
 
   success(message, ...args) {
     this.winston.info(message, ...args);
-    console.log(this.formatConsoleMessage('SUCCESS', message, chalk.green));
+    this.writeConsole(this.formatConsoleMessage('SUCCESS', message, chalk.green));
   }
 
   warn(message, ...args) {
     this.winston.warn(message, ...args);
-    console.log(this.formatConsoleMessage('WARN', message, chalk.yellow));
+    this.writeConsole(this.formatConsoleMessage('WARN', message, chalk.yellow));
   }
 
   error(message, error = null, ...args) {
@@ -66,7 +66,7 @@ class Logger {
     } else {
       this.winston.error(message, ...args);
     }
-    console.log(this.formatConsoleMessage('ERROR', message, chalk.red));
+    this.writeConsole(this.formatConsoleMessage('ERROR', message, chalk.red));
     if (error && process.env.NODE_ENV !== 'production') {
       console.error(chalk.red(error.stack));
     }
@@ -75,7 +75,18 @@ class Logger {
   debug(message, ...args) {
     this.winston.debug(message, ...args);
     if (process.env.NODE_ENV !== 'production') {
-      console.log(this.formatConsoleMessage('DEBUG', message, chalk.gray));
+      this.writeConsole(this.formatConsoleMessage('DEBUG', message, chalk.gray));
+    }
+  }
+
+  // Console output goes to stdout by default. Processes that reserve stdout
+  // for a machine-readable protocol (e.g. the MCP stdio transport) set
+  // LOG_CONSOLE_STREAM=stderr so stdout stays free of log lines.
+  writeConsole(line) {
+    if (String(process.env.LOG_CONSOLE_STREAM || '').toLowerCase() === 'stderr') {
+      console.error(line);
+    } else {
+      console.log(line);
     }
   }
 

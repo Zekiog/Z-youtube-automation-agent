@@ -50,6 +50,10 @@ class ContentStrategyAgent {
     const youtube = this.credentials.getYouTubeClient();
     
     try {
+      if (!youtube) {
+        this.logger.warn('YouTube client not initialized (credentials missing); trends fetch skipped');
+        return [];
+      }
       const response = await youtube.videos.list({
         part: 'snippet,statistics',
         chart: 'mostPopular',
